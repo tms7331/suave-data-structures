@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
+
 import "suave-std/suavelib/Suave.sol";
 import "forge-std/console.sol";
 
@@ -17,7 +18,7 @@ contract BinarySearchTree {
     }
 
     struct Node {
-        uint val;
+        uint256 val;
         Suave.DataId left;
         Suave.DataId right;
     }
@@ -33,17 +34,14 @@ contract BinarySearchTree {
      */
     function initBinaryTree() external returns (bytes memory) {
         Suave.DataId _rootPointerId = buildRootPointer();
-        return
-            abi.encodeWithSelector(this.setBinaryTree.selector, _rootPointerId);
+        return abi.encodeWithSelector(this.setBinaryTree.selector, _rootPointerId);
     }
 
     // CALLBACKS
 
     function nullCallback() public payable {}
 
-    function setBinaryTree(
-        Suave.DataId _rootPointerId
-    ) public payable {
+    function setBinaryTree(Suave.DataId _rootPointerId) public payable {
         require(Suave.DataId.unwrap(rootPointerId) == Suave.DataId.unwrap(nullId), "Already initialized");
         rootPointerId = _rootPointerId;
     }
@@ -51,12 +49,7 @@ contract BinarySearchTree {
     // CONFIDENTIAL STORE HELPER FUNCTIONS
 
     function buildRootPointer() internal returns (Suave.DataId) {
-        Suave.DataRecord memory record = Suave.newDataRecord(
-            0,
-            addressList,
-            addressList,
-            "rootPointer"
-        );
+        Suave.DataRecord memory record = Suave.newDataRecord(0, addressList, addressList, "rootPointer");
         writeRef(record.id, nullId);
         return record.id;
     }
@@ -65,14 +58,8 @@ contract BinarySearchTree {
      * @notice Returns the DataId for the root of the binary tree
      */
     function getRef() internal view returns (Suave.DataId) {
-        bytes memory value = Suave.confidentialRetrieve(
-            rootPointerId,
-            "suavebst:v0:rootPointer"
-        );
-        RootPointer memory rootPointer = abi.decode(
-            value,
-            (RootPointer)
-        );
+        bytes memory value = Suave.confidentialRetrieve(rootPointerId, "suavebst:v0:rootPointer");
+        RootPointer memory rootPointer = abi.decode(value, (RootPointer));
         return rootPointer.ref;
     }
 
@@ -87,14 +74,8 @@ contract BinarySearchTree {
      * @param nodeId DataId for the node to be retrieved.
      */
     function getNode(Suave.DataId nodeId) internal returns (Node memory node) {
-        require(
-            Suave.DataId.unwrap(nodeId) != Suave.DataId.unwrap(nullId),
-            "Node does not exist"
-        );
-        bytes memory value = Suave.confidentialRetrieve(
-            nodeId,
-            "suavebst:v0:node"
-        );
+        require(Suave.DataId.unwrap(nodeId) != Suave.DataId.unwrap(nullId), "Node does not exist");
+        bytes memory value = Suave.confidentialRetrieve(nodeId, "suavebst:v0:node");
         node = abi.decode(value, (Node));
         return node;
     }
@@ -113,13 +94,8 @@ contract BinarySearchTree {
      * @notice Takes in raw fields for a node and creates a new node
      * @dev Used only for node creation, to update existing nodes 'writeNode' should be used
      */
-    function createNode(uint val) internal returns (Suave.DataId) {
-        Suave.DataRecord memory record = Suave.newDataRecord(
-            0,
-            addressList,
-            addressList,
-            "node"
-        );
+    function createNode(uint256 val) internal returns (Suave.DataId) {
+        Suave.DataRecord memory record = Suave.newDataRecord(0, addressList, addressList, "node");
         // New nodes will always be leaf nodes
         Node memory node = Node(val, nullId, nullId);
         bytes memory value = abi.encode(node);
@@ -127,11 +103,10 @@ contract BinarySearchTree {
         return record.id;
     }
 
-
     /**
      * @notice Recursive insert into tree below specified node
      */
-    function _insert(Suave.DataId nodeId, Node memory node, uint val) internal {
+    function _insert(Suave.DataId nodeId, Node memory node, uint256 val) internal {
         // Always inserting to a leaf node
         // If it's smaller than current node - insert recursively to the left
         // Otherwise - insert recursively to the right
@@ -139,52 +114,46 @@ contract BinarySearchTree {
             if (Suave.DataId.unwrap(node.left) != Suave.DataId.unwrap(nullId)) {
                 Node memory nodeLeft = getNode(node.left);
                 _insert(node.left, nodeLeft, val);
-            }
-            else {
+            } else {
                 Suave.DataId recordId = createNode(val);
                 node.left = recordId;
                 writeNode(nodeId, node);
             }
-        }
-        else {
+        } else {
             if (Suave.DataId.unwrap(node.right) != Suave.DataId.unwrap(nullId)) {
                 Node memory nodeRight = getNode(node.right);
                 _insert(node.right, nodeRight, val);
-            }
-            else {
+            } else {
                 Suave.DataId recordId = createNode(val);
                 node.right = recordId;
                 writeNode(nodeId, node);
             }
-
         }
     }
 
     function _display(Node memory node) internal {
         if (Suave.DataId.unwrap(node.left) != Suave.DataId.unwrap(nullId)) {
-           Node memory nodeLeft = getNode(node.left);
+            Node memory nodeLeft = getNode(node.left);
             _display(nodeLeft);
         }
         console.log(node.val);
         if (Suave.DataId.unwrap(node.right) != Suave.DataId.unwrap(nullId)) {
-           Node memory nodeRight = getNode(node.right);
+            Node memory nodeRight = getNode(node.right);
             _display(nodeRight);
         }
     }
-
 
     // USER FUNCTIONS
 
     /**
      * @notice Insert a value into the binary tree
      */
-    function insert(uint val) external returns (bytes memory) {
+    function insert(uint256 val) external returns (bytes memory) {
         Suave.DataId _rootId = getRef();
         if (Suave.DataId.unwrap(_rootId) != Suave.DataId.unwrap(nullId)) {
             Node memory node = getNode(_rootId);
             _insert(_rootId, node, val);
-        }
-        else {
+        } else {
             Suave.DataId recordId = createNode(val);
             writeRef(rootPointerId, recordId);
         }

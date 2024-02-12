@@ -8,7 +8,6 @@ import "forge-std/console.sol";
 import {BinarySearchTree} from "../src/BinarySearchTree.sol";
 
 contract TestForge is Test, SuaveEnabled {
-
     function testInsert() public {
         BinarySearchTree d = new BinarySearchTree();
 
@@ -23,6 +22,4 @@ contract TestForge is Test, SuaveEnabled {
         d.insert(1);
         d.display();
     }
-
 }
-
